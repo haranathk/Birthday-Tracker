@@ -5,115 +5,572 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>hip</title>
-  <!-- Tailwind CSS -->
+  <title>hip — Birthday & Event Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel to run JSX directly in the browser -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
-<body class="bg-neutral-950 m-0 p-0">
+<body class="bg-neutral-950 m-0 p-0 text-white">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
-    function HipAppClone() {
-      const [activeTab, setActiveTab] = useState('home');
-      const [cardSubTab, setCardSubTab] = useState('cards');
-      const [iCloudSync, setICloudSync] = useState(false);
-      const [showBanner, setShowBanner] = useState(true);
-      const [showAddModal, setShowAddModal] = useState(false);
+    // Default Seed Events
+    const INITIAL_EVENTS = [
+      {
+        id: 'ev-1',
+        name: 'Nani MDay',
+        type: 'Marriage',
+        day: 20,
+        month: 10,
+        year: 2015,
+        phone: '',
+        notes: 'Send anniversary wishes to Nani!',
+        favorite: false,
+        reminderTime: '09:00'
+      },
+      {
+        id: 'ev-2',
+        name: 'Suman Kasturi',
+        type: 'Birthday',
+        day: 28,
+        month: 10,
+        year: 1976,
+        phone: '',
+        notes: '50th Golden Jubilee Birthday celebration!',
+        favorite: true,
+        reminderTime: '09:00'
+      },
+      {
+        id: 'ev-3',
+        name: 'Baby Akhila',
+        type: 'Birthday',
+        day: 15,
+        month: 11,
+        year: 2022,
+        phone: '',
+        notes: 'Buy toys or dress for 4th birthday.',
+        favorite: true,
+        reminderTime: '09:00'
+      },
+      {
+        id: 'ev-4',
+        name: 'Rama Devi Venu MDay',
+        type: 'Marriage',
+        day: 22,
+        month: 11,
+        year: 1996,
+        phone: '',
+        notes: 'Marriage Anniversary',
+        favorite: false,
+        reminderTime: '09:00'
+      },
+      {
+        id: 'ev-5',
+        name: 'Gruhapravesham',
+        type: 'Other',
+        day: 3,
+        month: 12,
+        year: 2000,
+        phone: '',
+        notes: 'Housewarming anniversary',
+        favorite: false,
+        reminderTime: '09:00'
+      },
+      {
+        id: 'ev-6',
+        name: 'Sai Karthik',
+        type: 'Birthday',
+        day: 4,
+        month: 12,
+        year: 1997,
+        phone: '',
+        notes: '',
+        favorite: false,
+        reminderTime: '09:00'
+      }
+    ];
 
-      const [events, setEvents] = useState([
-        {
-          id: 1,
-          name: 'Nani MDay ( 2...',
-          type: 'Marriage',
-          initial: 'N',
-          section: 'RECENT',
-          icon: '✏️'
-        },
-        {
-          id: 2,
-          name: 'Suman Kasturi Birthday (1976)',
-          subtitle: 'Turning 50 • 28/10 • Wed',
-          initial: 'S',
-          daysLeft: 3,
-          section: 'LATER THIS WEEK',
-          icon: '🎂'
-        },
-        {
-          id: 3,
-          name: 'Baby Akhila',
-          subtitle: 'Turning 4 • 15/11 • Sun',
-          initial: 'B',
-          daysLeft: 21,
-          section: 'NOVEMBER 2026',
-          icon: '🎂'
-        },
-        {
-          id: 4,
-          name: 'Rama Devi Venu MDay (1996)',
-          subtitle: 'Marriage • 22/11 • Sun',
-          initial: 'R',
-          daysLeft: 28,
-          section: 'NOVEMBER 2026',
-          icon: '✏️'
-        },
-        {
-          id: 5,
-          name: 'Gruhapravesham ( 2000 )',
-          subtitle: 'Other • 03/12 • Thu',
-          initial: 'G',
-          daysLeft: 39,
-          section: 'DECEMBER 2026',
-          icon: '✏️'
-        },
-        {
-          id: 6,
-          name: 'Sai Karthik Birthday (1997)',
-          subtitle: 'Turning 29 • 04/12 • Fri',
-          initial: 'S',
-          daysLeft: 40,
-          section: 'DECEMBER 2026',
-          icon: '🎂'
+    const MONTH_NAMES = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const CARDS_CATALOG = [
+      { id: 'c1', title: 'Hippo Birthday Cake', emoji: '🦛🎂', bg: 'bg-sky-50', defaultMsg: 'Wishing you the happiest of birthdays filled with joy and cake! 🎂✨' },
+      { id: 'c2', title: 'Hippo Flowers & Balloon', emoji: '🦛🎈💐', bg: 'bg-amber-50', defaultMsg: 'Sending you warm wishes, flowers, and big smiles today! 💐🎈' },
+      { id: 'c3', title: 'Party Balloons', emoji: '🎈🎊✨', bg: 'bg-teal-50', defaultMsg: 'Here is to another year of amazing adventures! Happy Birthday! 🎈🎊' },
+      { id: 'c4', title: 'Sparkling Heart', emoji: '❤️✨', bg: 'bg-rose-50', defaultMsg: 'Sending lots of love on your special day! ❤️✨' },
+      { id: 'c5', title: 'Wedding Rings', emoji: '💍🌹', bg: 'bg-orange-50', defaultMsg: 'Wishing you both a very Happy Anniversary and many more years of love! 💍🌹' },
+      { id: 'c6', title: 'Champagne Pop', emoji: '🍾🥂✨', bg: 'bg-yellow-50', defaultMsg: 'Cheers to celebrating your special milestone! 🥂🍾' },
+      { id: 'c7', title: 'Stack of Gifts', emoji: '🎁🎀🎉', bg: 'bg-purple-50', defaultMsg: 'May your year ahead be wrapped with happiness and surprises! 🎁🎉' }
+    ];
+
+    // Helper: Escape CSV field safely
+    const escapeCSVField = (val) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Helper: Parse a single CSV line respecting quotes
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+        if (inQuotes) {
+          if (char === '"' && nextChar === '"') {
+            current += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = false;
+          } else {
+            current += char;
+          }
+        } else {
+          if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
         }
-      ]);
+      }
+      result.push(current.trim());
+      return result;
+    };
 
-      const [newEvent, setNewEvent] = useState({ name: '', subtitle: '', daysLeft: 10 });
+    function HipFunctionalApp() {
+      // ==================== PERSISTENT STATE ====================
+      const [events, setEvents] = useState(() => {
+        const saved = localStorage.getItem('hip_events_v1');
+        return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+      });
 
-      const handleAddEvent = (e) => {
-        e.preventDefault();
-        if (!newEvent.name) return;
-        const added = {
-          id: Date.now(),
-          name: newEvent.name,
-          subtitle: newEvent.subtitle || 'Custom • Upcoming',
-          initial: newEvent.name.charAt(0).toUpperCase(),
-          daysLeft: Number(newEvent.daysLeft) || 7,
-          section: 'LATER THIS WEEK',
-          icon: '🎂'
+      const [profile, setProfile] = useState(() => {
+        const saved = localStorage.getItem('hip_profile_v1');
+        return saved ? JSON.parse(saved) : {
+          name: 'You',
+          birthday: '',
+          anniversary: '',
+          customOccasionName: '',
+          customOccasionDate: ''
         };
-        setEvents([...events, added]);
-        setNewEvent({ name: '', subtitle: '', daysLeft: 10 });
-        setShowAddModal(false);
+      });
+
+      const [settings, setSettings] = useState(() => {
+        const saved = localStorage.getItem('hip_settings_v1');
+        return saved ? JSON.parse(saved) : {
+          iCloudSync: false,
+          showBanner: true,
+          lastBackup: '04/07/22, 4:33 PM',
+          sinceWeMetDate: '2020-01-01'
+        };
+      });
+
+      const [cardHistory, setCardHistory] = useState(() => {
+        const saved = localStorage.getItem('hip_card_history_v1');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      useEffect(() => {
+        localStorage.setItem('hip_events_v1', JSON.stringify(events));
+      }, [events]);
+
+      useEffect(() => {
+        localStorage.setItem('hip_profile_v1', JSON.stringify(profile));
+      }, [profile]);
+
+      useEffect(() => {
+        localStorage.setItem('hip_settings_v1', JSON.stringify(settings));
+      }, [settings]);
+
+      useEffect(() => {
+        localStorage.setItem('hip_card_history_v1', JSON.stringify(cardHistory));
+      }, [cardHistory]);
+
+      // ==================== UI NAVIGATION & FILTER STATE ====================
+      const [activeTab, setActiveTab] = useState('home');
+      const [searchOpen, setSearchOpen] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [typeFilter, setTypeFilter] = useState('All');
+      const [onlyFavorites, setOnlyFavorites] = useState(false);
+
+      // Modals & Detail Sheets
+      const [selectedEventId, setSelectedEventId] = useState(null);
+      const [isFormOpen, setIsFormOpen] = useState(false);
+      const [editingEvent, setEditingEvent] = useState(null);
+      const [activeCard, setActiveCard] = useState(null);
+      const [cardRecipientId, setCardRecipientId] = useState('');
+      const [cardCustomMessage, setCardCustomMessage] = useState('');
+      const [cardSubTab, setCardSubTab] = useState('cards');
+
+      // Calendar State
+      const today = new Date();
+      const [calMonth, setCalMonth] = useState(today.getMonth());
+      const [calYear, setCalYear] = useState(today.getFullYear());
+      const [selectedCalDay, setSelectedCalDay] = useState(today.getDate());
+
+      // Profile Edit Modal
+      const [profileEditModal, setProfileEditModal] = useState(false);
+      const fileInputRef = useRef(null);
+
+      // ==================== DATE & AGE CALCULATION ENGINE ====================
+      const enrichEvent = (ev) => {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        let nextDate = new Date(now.getFullYear(), ev.month - 1, ev.day);
+        let diffTime = nextDate.getTime() - todayStart.getTime();
+        let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        let isRecent = diffDays < 0 && diffDays >= -7;
+        let recentDaysAgo = Math.abs(diffDays);
+
+        if (diffDays < 0) {
+          nextDate = new Date(now.getFullYear() + 1, ev.month - 1, ev.day);
+          diffTime = nextDate.getTime() - todayStart.getTime();
+          diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        const targetYear = nextDate.getFullYear();
+        const yearsCount = ev.year ? targetYear - Number(ev.year) : null;
+        const dayOfWeek = SHORT_DAYS[nextDate.getDay()];
+        const paddedDay = String(ev.day).padStart(2, '0');
+        const paddedMonth = String(ev.month).padStart(2, '0');
+
+        let displayTitle = ev.name;
+        if (ev.type === 'Birthday' && !ev.name.toLowerCase().includes('birthday') && ev.year) {
+          displayTitle = `${ev.name} Birthday (${ev.year})`;
+        } else if (ev.year) {
+          displayTitle = `${ev.name} (${ev.year})`;
+        }
+
+        let subtitle = '';
+        if (ev.type === 'Birthday' && yearsCount !== null && yearsCount > 0) {
+          subtitle = `Turning ${yearsCount} • ${paddedDay}/${paddedMonth} • ${dayOfWeek}`;
+        } else {
+          subtitle = `${ev.type} • ${paddedDay}/${paddedMonth} • ${dayOfWeek}`;
+        }
+
+        const icon = ev.type === 'Birthday' ? '🎂' : ev.type === 'Marriage' ? '💍' : '✏️';
+
+        return {
+          ...ev,
+          displayTitle,
+          subtitle,
+          daysLeft: diffDays,
+          isRecent,
+          recentDaysAgo,
+          nextDate,
+          targetYear,
+          yearsCount,
+          dayOfWeek,
+          paddedDate: `${paddedDay}/${paddedMonth}`,
+          initial: ev.name ? ev.name.trim().charAt(0).toUpperCase() : '?',
+          icon
+        };
       };
+
+      const enrichedEvents = useMemo(() => {
+        return events.map(enrichEvent).sort((a, b) => a.daysLeft - b.daysLeft);
+      }, [events]);
+
+      const filteredEvents = useMemo(() => {
+        return enrichedEvents.filter(ev => {
+          if (onlyFavorites && !ev.favorite) return false;
+          if (typeFilter !== 'All' && ev.type !== typeFilter) return false;
+          if (searchQuery.trim() !== '') {
+            const q = searchQuery.toLowerCase();
+            return ev.name.toLowerCase().includes(q) || ev.type.toLowerCase().includes(q) || (ev.notes && ev.notes.toLowerCase().includes(q));
+          }
+          return true;
+        });
+      }, [enrichedEvents, onlyFavorites, typeFilter, searchQuery]);
+
+      const selectedEvent = useMemo(() => {
+        if (!selectedEventId) return null;
+        return enrichedEvents.find(e => e.id === selectedEventId) || null;
+      }, [selectedEventId, enrichedEvents]);
+
+      const groupedSections = useMemo(() => {
+        const recent = enrichedEvents.filter(e => e.isRecent);
+        const todayList = filteredEvents.filter(e => e.daysLeft === 0);
+        const laterThisWeek = filteredEvents.filter(e => e.daysLeft > 0 && e.daysLeft <= 7);
+        const monthBuckets = {};
+
+        filteredEvents.filter(e => e.daysLeft > 7).forEach(ev => {
+          const monthHeader = `${MONTH_NAMES[ev.nextDate.getMonth()].toUpperCase()} ${ev.targetYear}`;
+          if (!monthBuckets[monthHeader]) monthBuckets[monthHeader] = [];
+          monthBuckets[monthHeader].push(ev);
+        });
+
+        return { recent, todayList, laterThisWeek, monthBuckets };
+      }, [enrichedEvents, filteredEvents]);
+
+      // ==================== CRUD HANDLERS ====================
+      const [formState, setFormState] = useState({
+        name: '',
+        type: 'Birthday',
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: '',
+        phone: '',
+        notes: '',
+        favorite: false,
+        reminderTime: '09:00'
+      });
+
+      const openAddModal = (preset = {}) => {
+        setEditingEvent(null);
+        setFormState({
+          name: preset.name || '',
+          type: preset.type || 'Birthday',
+          day: preset.day || today.getDate(),
+          month: preset.month || (today.getMonth() + 1),
+          year: preset.year || '',
+          phone: '',
+          notes: '',
+          favorite: false,
+          reminderTime: '09:00'
+        });
+        setIsFormOpen(true);
+      };
+
+      const openEditModal = (ev) => {
+        setEditingEvent(ev);
+        setFormState({
+          name: ev.name,
+          type: ev.type,
+          day: ev.day,
+          month: ev.month,
+          year: ev.year || '',
+          phone: ev.phone || '',
+          notes: ev.notes || '',
+          favorite: !!ev.favorite,
+          reminderTime: ev.reminderTime || '09:00'
+        });
+        setIsFormOpen(true);
+      };
+
+      const handleSaveEvent = (e) => {
+        e.preventDefault();
+        if (!formState.name.trim()) return;
+
+        const payload = {
+          id: editingEvent ? editingEvent.id : `ev-${Date.now()}`,
+          name: formState.name.trim(),
+          type: formState.type,
+          day: Number(formState.day),
+          month: Number(formState.month),
+          year: formState.year ? Number(formState.year) : '',
+          phone: formState.phone.trim(),
+          notes: formState.notes.trim(),
+          favorite: formState.favorite,
+          reminderTime: formState.reminderTime
+        };
+
+        if (editingEvent) {
+          setEvents(prev => prev.map(item => item.id === editingEvent.id ? payload : item));
+        } else {
+          setEvents(prev => [...prev, payload]);
+        }
+        setIsFormOpen(false);
+      };
+
+      const handleDeleteEvent = (id) => {
+        if (window.confirm('Delete this event permanently?')) {
+          setEvents(prev => prev.filter(item => item.id !== id));
+          setSelectedEventId(null);
+        }
+      };
+
+      const toggleFavorite = (id, e) => {
+        if (e) e.stopPropagation();
+        setEvents(prev => prev.map(item => item.id === id ? { ...item, favorite: !item.favorite } : item));
+      };
+
+      const updateEventNotes = (id, newNotes) => {
+        setEvents(prev => prev.map(item => item.id === id ? { ...item, notes: newNotes } : item));
+      };
+
+      const shareMessage = async (text, phone = '') => {
+        if (phone) {
+          const cleanPhone = phone.replace(/[^0-9+]/g, '');
+          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+          return;
+        }
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'hip Wish', text });
+            return;
+          } catch (err) {}
+        }
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      };
+
+      // ==================== CSV EXPORT & IMPORT ====================
+      const handleExportCSV = () => {
+        const headers = ['Name', 'Type', 'Day', 'Month', 'Year', 'Phone', 'Notes', 'Favorite', 'ReminderTime'];
+        const rows = events.map(ev => [
+          escapeCSVField(ev.name),
+          escapeCSVField(ev.type),
+          escapeCSVField(ev.day),
+          escapeCSVField(ev.month),
+          escapeCSVField(ev.year || ''),
+          escapeCSVField(ev.phone || ''),
+          escapeCSVField(ev.notes || ''),
+          escapeCSVField(ev.favorite ? 'TRUE' : 'FALSE'),
+          escapeCSVField(ev.reminderTime || '09:00')
+        ].join(','));
+
+        // Add UTF-8 BOM (\uFEFF) so Excel opens special characters properly
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hip-events-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        const nowStr = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+        setSettings(s => ({ ...s, lastBackup: nowStr }));
+      };
+
+      const handleImportCSV = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const text = evt.target.result.replace(/^\uFEFF/, '');
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) {
+              alert('The CSV file appears to be empty or missing data rows.');
+              return;
+            }
+
+            const headerCols = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+            const idxName = headerCols.indexOf('name');
+            const idxType = headerCols.indexOf('type');
+            const idxDay = headerCols.indexOf('day');
+            const idxMonth = headerCols.indexOf('month');
+            const idxYear = headerCols.indexOf('year');
+            const idxPhone = headerCols.indexOf('phone');
+            const idxNotes = headerCols.indexOf('notes');
+            const idxFav = headerCols.indexOf('favorite');
+            const idxRem = headerCols.indexOf('remindertime');
+
+            const importedEvents = [];
+            for (let i = 1; i < lines.length; i++) {
+              const cols = parseCSVLine(lines[i]);
+              const name = idxName !== -1 ? cols[idxName] : cols[0];
+              if (!name) continue;
+
+              const rawType = (idxType !== -1 ? cols[idxType] : cols[1]) || 'Birthday';
+              const normalizedType = ['Birthday', 'Marriage', 'Other'].find(
+                t => t.toLowerCase() === rawType.toLowerCase()
+              ) || 'Other';
+
+              const day = Math.min(31, Math.max(1, parseInt(idxDay !== -1 ? cols[idxDay] : cols[2], 10) || 1));
+              const month = Math.min(12, Math.max(1, parseInt(idxMonth !== -1 ? cols[idxMonth] : cols[3], 10) || 1));
+              const yearVal = idxYear !== -1 ? cols[idxYear] : cols[4];
+              const year = yearVal && !isNaN(parseInt(yearVal, 10)) ? parseInt(yearVal, 10) : '';
+              const phone = (idxPhone !== -1 ? cols[idxPhone] : cols[5]) || '';
+              const notes = (idxNotes !== -1 ? cols[idxNotes] : cols[6]) || '';
+              const favStr = ((idxFav !== -1 ? cols[idxFav] : cols[7]) || '').toLowerCase();
+              const favorite = favStr === 'true' || favStr === 'yes' || favStr === '1';
+              const reminderTime = (idxRem !== -1 ? cols[idxRem] : cols[8]) || '09:00';
+
+              importedEvents.push({
+                id: `ev-csv-${Date.now()}-${i}`,
+                name,
+                type: normalizedType,
+                day,
+                month,
+                year,
+                phone,
+                notes,
+                favorite,
+                reminderTime
+              });
+            }
+
+            if (importedEvents.length === 0) {
+              alert('No valid event rows found in CSV.');
+              return;
+            }
+
+            const shouldReplace = window.confirm(
+              `Found ${importedEvents.length} events in CSV.\n\nClick OK to REPLACE your current list, or Cancel to MERGE (add) them to your current list.`
+            );
+
+            if (shouldReplace) {
+              setEvents(importedEvents);
+            } else {
+              setEvents(prev => [...prev, ...importedEvents]);
+            }
+
+            alert(`Successfully imported ${importedEvents.length} events from CSV!`);
+          } catch (err) {
+            alert('Error reading CSV file. Please make sure it is a valid CSV.');
+          }
+          e.target.value = '';
+        };
+        reader.readAsText(file);
+      };
+
+      const testReminderNotification = async () => {
+        if (!('Notification' in window)) {
+          alert('Reminder Test: Next event is ' + (enrichedEvents[0]?.displayTitle || 'None'));
+          return;
+        }
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          new Notification('🎂 hip Reminder Test', {
+            body: `Working! Upcoming: ${enrichedEvents[0]?.displayTitle} in ${enrichedEvents[0]?.daysLeft} days.`
+          });
+        } else {
+          alert(`Reminder Test Triggered!\nUpcoming: ${enrichedEvents[0]?.displayTitle} in ${enrichedEvents[0]?.daysLeft} days.`);
+        }
+      };
+
+      // Calendar Helpers
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const firstDayOffset = new Date(calYear, calMonth, 1).getDay();
+      const eventsInSelectedCalMonth = useMemo(() => {
+        return enrichedEvents.filter(e => e.month === calMonth + 1);
+      }, [enrichedEvents, calMonth]);
+
+      const eventsOnSelectedCalDay = useMemo(() => {
+        return eventsInSelectedCalMonth.filter(e => e.day === selectedCalDay);
+      }, [eventsInSelectedCalMonth, selectedCalDay]);
 
       return (
         <div className="min-h-screen bg-neutral-950 flex justify-center items-center p-0 sm:p-4 font-sans select-none">
-          {/* iPhone 16 Pro Viewport Frame */}
+          {/* iPhone 16 Pro Frame */}
           <div className="w-full max-w-[402px] h-screen sm:h-[874px] bg-black text-white relative overflow-hidden flex flex-col sm:rounded-[52px] sm:border-[8px] sm:border-neutral-800 shadow-2xl">
-            
+
             {/* iOS Status Bar */}
-            <div className="flex justify-between items-center px-7 pt-3 pb-2 text-sm font-semibold z-20">
-              <span>9:01</span>
+            <div className="flex justify-between items-center px-7 pt-3 pb-2 text-sm font-semibold z-20 shrink-0">
+              <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
               <div className="w-28 h-7 bg-neutral-900 rounded-full hidden sm:block" />
               <div className="flex items-center gap-1.5 text-xs">
                 <span>📶</span>
@@ -121,55 +578,139 @@
               </div>
             </div>
 
-            {/* Main Scrollable Content Area */}
+            {/* ==================== MAIN CONTENT AREA ==================== */}
             <div className="flex-1 overflow-y-auto pb-28 scrollbar-none">
-              
+
               {/* ==================== TAB 1: HOME ==================== */}
               {activeTab === 'home' && (
                 <div className="px-4 pt-1">
-                  {/* Top Bar */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1.5 px-3.5 gap-4 border border-neutral-800 text-sm">
-                      <span>🌪️</span>
-                      <span>🔍</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1 px-2.5 gap-2 border border-neutral-800">
+                      <button
+                        onClick={() => {
+                          const order = ['All', 'Birthday', 'Marriage', 'Other'];
+                          const next = order[(order.indexOf(typeFilter) + 1) % order.length];
+                          setTypeFilter(next);
+                        }}
+                        className={`px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
+                          typeFilter !== 'All' ? 'bg-[#1d9bf0] text-white' : 'text-neutral-300'
+                        }`}
+                        title="Filter by Event Type"
+                      >
+                        <span>☰</span>
+                        {typeFilter !== 'All' && <span>{typeFilter}</span>}
+                      </button>
+                      <button
+                        onClick={() => setSearchOpen(!searchOpen)}
+                        className={`p-1 rounded-full text-xs ${searchOpen ? 'text-[#1d9bf0]' : 'text-neutral-300'}`}
+                        title="Search Events"
+                      >
+                        🔍
+                      </button>
                     </div>
 
-                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1 border border-neutral-800 text-sm">
-                      <button className="bg-[#2c2c2e] p-1 px-3 rounded-full">👥</button>
-                      <button className="p-1 px-3 rounded-full">⭐</button>
+                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1 border border-neutral-800 text-xs">
+                      <button
+                        onClick={() => setOnlyFavorites(false)}
+                        className={`p-1 px-3 rounded-full transition ${!onlyFavorites ? 'bg-[#2c2c2e] text-white font-bold' : 'text-neutral-400'}`}
+                      >
+                        👥 All
+                      </button>
+                      <button
+                        onClick={() => setOnlyFavorites(true)}
+                        className={`p-1 px-3 rounded-full transition ${onlyFavorites ? 'bg-[#2c2c2e] text-amber-400 font-bold' : 'text-neutral-400'}`}
+                      >
+                        ⭐ Favs
+                      </button>
                     </div>
 
-                    <button className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-sm">
+                    <button
+                      onClick={() => openAddModal()}
+                      className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-sm"
+                      title="Quick Add"
+                    >
                       🌱
                     </button>
                   </div>
 
-                  {/* RECENT Section */}
-                  <div className="mb-5">
-                    <div className="text-xs font-bold text-neutral-400 tracking-wider mb-3">
-                      🔄 RECENT
+                  {/* Live Search Input */}
+                  {searchOpen && (
+                    <div className="mb-4 flex items-center bg-[#1c1c1e] border border-neutral-700 rounded-2xl px-3 py-2">
+                      <span className="text-neutral-400 mr-2 text-sm">🔍</span>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search name, birthday, marriage, notes..."
+                        className="bg-transparent text-sm text-white w-full focus:outline-none"
+                        autoFocus
+                      />
+                      {searchQuery && (
+                        <button onClick={() => setSearchQuery('')} className="text-neutral-400 text-xs ml-2">✕</button>
+                      )}
                     </div>
-                    {events.filter(e => e.section === 'RECENT').map(ev => (
-                      <div key={ev.id} className="flex items-center gap-3.5 py-2 border-t border-neutral-900">
-                        <div className="w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg">
-                          {ev.initial}
-                        </div>
-                        <div>
-                          <div className="font-bold text-[16px]">{ev.name}</div>
-                          <div className="text-neutral-400 text-sm">{ev.type}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  )}
 
-                  {/* STAY CONNECTED Section */}
-                  <div className="mb-6 border-t border-neutral-900 pt-3">
+                  {/* RECENT Section */}
+                  {groupedSections.recent.length > 0 && !onlyFavorites && typeFilter === 'All' && !searchQuery && (
+                    <div className="mb-5">
+                      <div className="text-xs font-bold text-neutral-400 tracking-wider mb-2">
+                        🔄 RECENT
+                      </div>
+                      {groupedSections.recent.map(ev => (
+                        <div
+                          key={ev.id}
+                          onClick={() => setSelectedEventId(ev.id)}
+                          className="flex items-center justify-between py-2.5 border-t border-neutral-900 cursor-pointer active:bg-neutral-900/60 rounded-xl px-1 transition"
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg">
+                              {ev.initial}
+                            </div>
+                            <div>
+                              <div className="font-bold text-[15px]">{ev.displayTitle}</div>
+                              <div className="text-neutral-400 text-xs">{ev.type} • {ev.paddedDate} ({ev.recentDaysAgo}d ago)</div>
+                            </div>
+                          </div>
+                          <span className="text-neutral-500 text-sm">›</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* STAY CONNECTED / TODAY Section */}
+                  <div className="mb-5 border-t border-neutral-900 pt-3">
                     <div className="text-xs font-bold text-neutral-400 tracking-wider mb-2">
                       💌 STAY CONNECTED
                     </div>
-                    <div className="font-bold text-[15px] mb-0.5">No celebrations today 🌤️</div>
-                    <div className="text-neutral-400 text-xs mb-3">Keep friendships warm with a hello</div>
-                    
+                    {groupedSections.todayList.length === 0 ? (
+                      <>
+                        <div className="font-bold text-[15px] mb-0.5">No celebrations today 🌤️</div>
+                        <div className="text-neutral-400 text-xs mb-3">Tap any message below to send a quick hello on WhatsApp</div>
+                      </>
+                    ) : (
+                      <div className="space-y-3 mb-3">
+                        {groupedSections.todayList.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setSelectedEventId(ev.id)}
+                            className="bg-[#f06478]/20 border border-[#f06478] p-3 rounded-2xl flex items-center justify-between cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 rounded-full bg-[#f06478] text-white flex items-center justify-center font-bold text-lg">
+                                {ev.icon}
+                              </div>
+                              <div>
+                                <div className="font-bold text-sm text-white">TODAY: {ev.displayTitle}</div>
+                                <div className="text-xs text-pink-200">{ev.subtitle}</div>
+                              </div>
+                            </div>
+                            <span className="bg-[#f06478] text-white text-xs font-bold px-2.5 py-1 rounded-xl">Wish Now</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
                       {[
                         "Hi! How's your week going?",
@@ -178,8 +719,8 @@
                       ].map((msg, i) => (
                         <button
                           key={i}
-                          onClick={() => alert(`Sharing message: "${msg}"`)}
-                          className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-left px-3.5 py-2.5 rounded-2xl flex items-center gap-2 shrink-0 border border-neutral-800"
+                          onClick={() => shareMessage(msg)}
+                          className="bg-[#1c1c1e] hover:bg-[#2c2c2e] active:scale-95 transition text-left px-3.5 py-2.5 rounded-2xl flex items-center gap-2 shrink-0 border border-neutral-800"
                         >
                           <span className="text-xs font-medium max-w-[115px] leading-snug">{msg}</span>
                           <span className="text-neutral-500 text-xs">›</span>
@@ -188,16 +729,19 @@
                     </div>
                   </div>
 
-                  {/* Event Sections */}
-                  {['LATER THIS WEEK', 'NOVEMBER 2026', 'DECEMBER 2026'].map(section => (
-                    <div key={section} className="mb-5 border-t border-neutral-900 pt-3">
+                  {/* LATER THIS WEEK Section */}
+                  {groupedSections.laterThisWeek.length > 0 && (
+                    <div className="mb-5 border-t border-neutral-900 pt-3">
                       <div className="text-xs font-bold text-neutral-400 tracking-wider mb-3">
-                        {section === 'LATER THIS WEEK' ? '🎁 ' : '🗓️ '}
-                        {section}
+                        🎁 LATER THIS WEEK
                       </div>
-                      <div className="space-y-4">
-                        {events.filter(e => e.section === section).map(ev => (
-                          <div key={ev.id} className="flex items-center justify-between">
+                      <div className="space-y-3">
+                        {groupedSections.laterThisWeek.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setSelectedEventId(ev.id)}
+                            className="flex items-center justify-between py-1.5 px-1 rounded-xl cursor-pointer hover:bg-neutral-900/60 active:bg-neutral-900 transition"
+                          >
                             <div className="flex items-center gap-3.5">
                               <div className="relative w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg shrink-0">
                                 {ev.initial}
@@ -206,7 +750,48 @@
                                 </span>
                               </div>
                               <div>
-                                <div className="font-bold text-[15px] leading-tight">{ev.name}</div>
+                                <div className="font-bold text-[15px] leading-tight flex items-center gap-1.5">
+                                  <span>{ev.displayTitle}</span>
+                                  {ev.favorite && <span className="text-amber-400 text-xs">★</span>}
+                                </div>
+                                <div className="text-neutral-400 text-xs mt-0.5">{ev.subtitle}</div>
+                              </div>
+                            </div>
+                            <div className="bg-[#1d9bf0] text-white rounded-xl px-2.5 py-1 text-center min-w-[52px]">
+                              <div className="text-xs font-bold leading-tight">{ev.daysLeft}</div>
+                              <div className="text-[10px] leading-tight">{ev.daysLeft === 1 ? 'day' : 'days'}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MONTHLY SECTIONS */}
+                  {Object.entries(groupedSections.monthBuckets).map(([monthLabel, list]) => (
+                    <div key={monthLabel} className="mb-5 border-t border-neutral-900 pt-3">
+                      <div className="text-xs font-bold text-neutral-400 tracking-wider mb-3">
+                        🗓️ {monthLabel}
+                      </div>
+                      <div className="space-y-3">
+                        {list.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setSelectedEventId(ev.id)}
+                            className="flex items-center justify-between py-1.5 px-1 rounded-xl cursor-pointer hover:bg-neutral-900/60 active:bg-neutral-900 transition"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <div className="relative w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg shrink-0">
+                                {ev.initial}
+                                <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#f06478] text-white flex items-center justify-center border-2 border-black text-[10px]">
+                                  {ev.icon}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-bold text-[15px] leading-tight flex items-center gap-1.5">
+                                  <span>{ev.displayTitle}</span>
+                                  {ev.favorite && <span className="text-amber-400 text-xs">★</span>}
+                                </div>
                                 <div className="text-neutral-400 text-xs mt-0.5">{ev.subtitle}</div>
                               </div>
                             </div>
@@ -220,30 +805,71 @@
                     </div>
                   ))}
 
+                  {filteredEvents.length === 0 && (
+                    <div className="text-center py-12 text-neutral-500 text-sm">
+                      No matching events found. Tap <b>+</b> to add one!
+                    </div>
+                  )}
+
                   {/* Floating Pink + | More Pill */}
                   <div className="fixed bottom-24 right-6 sm:absolute sm:bottom-24 sm:right-5 z-20">
                     <div className="bg-[#f06478] text-white rounded-full flex items-center shadow-lg px-4 py-2.5 gap-3">
-                      <button onClick={() => setShowAddModal(true)} className="font-bold text-lg leading-none">+</button>
+                      <button onClick={() => openAddModal()} className="font-bold text-lg leading-none">+</button>
                       <div className="h-4 w-[1px] bg-white/40" />
-                      <button onClick={() => setShowAddModal(true)} className="text-sm font-bold">
-                        More ▾
+                      <button onClick={() => openAddModal()} className="text-sm font-bold">
+                        Add Event
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ==================== TAB 2: CALENDAR ==================== */}
+              {/* ==================== TAB 2: INTERACTIVE CALENDAR ==================== */}
               {activeTab === 'calendar' && (
                 <div className="px-4 pt-1">
                   <div className="flex items-center justify-between mb-6">
-                    <button className="bg-[#1c1c1e] border border-neutral-800 px-4 py-1.5 rounded-full text-sm font-bold">
+                    <button
+                      onClick={() => {
+                        setCalMonth(today.getMonth());
+                        setCalYear(today.getFullYear());
+                        setSelectedCalDay(today.getDate());
+                      }}
+                      className="bg-[#1c1c1e] border border-neutral-800 px-4 py-1.5 rounded-full text-sm font-bold active:scale-95"
+                    >
                       Today
                     </button>
-                    <div className="font-bold text-base">Oct 2026</div>
-                    <div className="flex items-center bg-[#1c1c1e] border border-neutral-800 rounded-full px-3 py-1 gap-4 text-sm font-bold">
-                      <span>‹</span>
-                      <span>›</span>
+                    <div className="font-bold text-base">
+                      {MONTH_NAMES[calMonth].slice(0, 3)} {calYear}
+                    </div>
+                    <div className="flex items-center bg-[#1c1c1e] border border-neutral-800 rounded-full px-2 py-1 gap-3 text-sm font-bold">
+                      <button
+                        onClick={() => {
+                          if (calMonth === 0) {
+                            setCalMonth(11);
+                            setCalYear(y => y - 1);
+                          } else {
+                            setCalMonth(m => m - 1);
+                          }
+                          setSelectedCalDay(1);
+                        }}
+                        className="px-2"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (calMonth === 11) {
+                            setCalMonth(0);
+                            setCalYear(y => y + 1);
+                          } else {
+                            setCalMonth(m => m + 1);
+                          }
+                          setSelectedCalDay(1);
+                        }}
+                        className="px-2"
+                      >
+                        ›
+                      </button>
                     </div>
                   </div>
 
@@ -254,41 +880,96 @@
                     ))}
                   </div>
 
-                  {/* October 2026 Calendar Grid */}
-                  <div className="grid grid-cols-7 gap-y-5 text-center text-sm font-bold">
-                    <div /><div /><div /><div />
-                    {Array.from({ length: 31 }, (_, idx) => {
+                  {/* Dynamic Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-y-3 text-center text-sm font-bold">
+                    {Array.from({ length: firstDayOffset }).map((_, i) => (
+                      <div key={`empty-${i}`} />
+                    ))}
+                    {Array.from({ length: daysInMonth }, (_, idx) => {
                       const day = idx + 1;
-                      const isToday = day === 25;
-                      const hasPencil = day === 20;
-                      const hasCake = day === 28;
+                      const isToday = day === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+                      const isSelected = day === selectedCalDay;
+                      const dayEvents = eventsInSelectedCalMonth.filter(e => e.day === day);
+
                       return (
-                        <div
+                        <button
                           key={day}
-                          className={`h-12 flex flex-col items-center justify-start pt-1.5 rounded-xl ${
-                            isToday ? 'bg-[#f06478] text-white' : ''
+                          onClick={() => setSelectedCalDay(day)}
+                          className={`h-12 flex flex-col items-center justify-start pt-1.5 rounded-xl transition ${
+                            isToday
+                              ? 'bg-[#f06478] text-white'
+                              : isSelected
+                              ? 'bg-[#1c1c1e] ring-2 ring-[#1d9bf0] text-white'
+                              : 'hover:bg-neutral-900'
                           }`}
                         >
                           <span>{day}</span>
-                          {hasPencil && <span className="text-[11px] mt-0.5">🖊️</span>}
-                          {hasCake && <span className="text-[11px] mt-0.5">🎂</span>}
-                        </div>
+                          {dayEvents.length > 0 && (
+                            <div className="flex gap-0.5 mt-0.5">
+                              {dayEvents.slice(0, 2).map(ev => (
+                                <span key={ev.id} className="text-[10px]">{ev.icon}</span>
+                              ))}
+                            </div>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
 
-                  <div className="mt-12 flex justify-center">
-                    <button
-                      onClick={() => setShowAddModal(true)}
-                      className="bg-[#1d9bf0] text-white font-bold text-sm px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md"
-                    >
-                      <span>+ Add another b'day 🎂</span>
-                    </button>
+                  {/* Selected Day Event List */}
+                  <div className="mt-6 border-t border-neutral-900 pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-bold text-neutral-400 uppercase">
+                        Events on {selectedCalDay} {MONTH_NAMES[calMonth]}
+                      </span>
+                      <button
+                        onClick={() => openAddModal({ day: selectedCalDay, month: calMonth + 1 })}
+                        className="text-xs font-bold text-[#1d9bf0]"
+                      >
+                        + Add on this date
+                      </button>
+                    </div>
+
+                    {eventsOnSelectedCalDay.length === 0 ? (
+                      <div className="bg-[#1c1c1e] rounded-2xl p-4 text-center text-neutral-400 text-xs">
+                        No events on {selectedCalDay} {MONTH_NAMES[calMonth]}.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {eventsOnSelectedCalDay.map(ev => (
+                          <div
+                            key={ev.id}
+                            onClick={() => setSelectedEventId(ev.id)}
+                            className="bg-[#1c1c1e] p-3 rounded-2xl flex items-center justify-between cursor-pointer border border-neutral-800"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold">
+                                {ev.initial}
+                              </div>
+                              <div>
+                                <div className="font-bold text-sm">{ev.displayTitle}</div>
+                                <div className="text-xs text-neutral-400">{ev.subtitle}</div>
+                              </div>
+                            </div>
+                            <span className="text-neutral-400 text-sm">›</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex justify-center">
+                      <button
+                        onClick={() => openAddModal({ day: selectedCalDay, month: calMonth + 1, type: 'Birthday' })}
+                        className="bg-[#1d9bf0] text-white font-bold text-sm px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition"
+                      >
+                        <span>+ Add another b'day 🎂</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* ==================== TAB 3: HIP CARDS ==================== */}
+              {/* ==================== TAB 3: HIP CARDS & STUDIO ==================== */}
               {activeTab === 'cards' && (
                 <div className="px-3 pt-1">
                   <div className="flex items-center justify-between mb-4">
@@ -303,56 +984,80 @@
                         hip Cards
                       </button>
                       <button
-                        onClick={() => setCardSubTab('gif')}
-                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition ${
-                          cardSubTab === 'gif' ? 'bg-black text-white' : 'text-neutral-400'
+                        onClick={() => setCardSubTab('history')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                          cardSubTab === 'history' ? 'bg-black text-white' : 'text-neutral-400'
                         }`}
                       >
-                        GIF
+                        Sent ({cardHistory.length})
                       </button>
                     </div>
-                    <button className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-[#1d9bf0] text-xs">
+                    <button
+                      onClick={() => setCardSubTab(cardSubTab === 'history' ? 'cards' : 'history')}
+                      className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-[#1d9bf0] text-xs"
+                    >
                       🕒
                     </button>
                   </div>
 
-                  <div className="mb-4 px-1">
-                    <div className="font-bold text-sm mb-0.5">🎉 Make your birthday wishes feel special.</div>
-                    <div className="text-neutral-400 text-[11px] leading-snug">
-                      Choose a card, add a message, and share via WhatsApp, iMessage, or any app
+                  {cardSubTab === 'cards' ? (
+                    <>
+                      <div className="mb-4 px-1">
+                        <div className="font-bold text-sm mb-0.5">🎉 Make your birthday wishes feel special.</div>
+                        <div className="text-neutral-400 text-[11px] leading-snug">
+                          Tap any card below to customize the message, pick a person, and send via WhatsApp or iMessage.
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                          onClick={() => {
+                            setActiveCard({ title: 'Custom Greeting Card', emoji: '💌✨', bg: 'bg-sky-50' });
+                            setCardCustomMessage('Wishing you a wonderful celebration filled with happiness! 🎉');
+                            setCardRecipientId(enrichedEvents[0]?.id || '');
+                          }}
+                          className="bg-[#1c1c1e] h-36 rounded-lg flex flex-col items-center justify-center gap-2 border border-neutral-800 hover:bg-[#2c2c2e]"
+                        >
+                          <div className="w-10 h-10 rounded-full border-2 border-[#1d9bf0] flex items-center justify-center text-[#1d9bf0] text-xl font-bold">
+                            +
+                          </div>
+                          <span className="text-[#1d9bf0] text-xs font-bold">Send New Card</span>
+                        </button>
+
+                        {CARDS_CATALOG.map((card) => (
+                          <div
+                            key={card.id}
+                            onClick={() => {
+                              setActiveCard(card);
+                              setCardCustomMessage(card.defaultMsg);
+                              setCardRecipientId(enrichedEvents[0]?.id || '');
+                            }}
+                            className={`${card.bg} h-36 rounded-lg flex flex-col items-center justify-center cursor-pointer shadow active:scale-95 transition`}
+                          >
+                            <div className="text-4xl mb-2">{card.emoji}</div>
+                            <span className="text-[11px] font-semibold text-neutral-700">{card.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-3 px-1">
+                      <div className="font-bold text-sm mb-2">Sent Cards History</div>
+                      {cardHistory.length === 0 ? (
+                        <div className="text-neutral-500 text-xs text-center py-10">No cards sent yet.</div>
+                      ) : (
+                        cardHistory.map((item, i) => (
+                          <div key={i} className="bg-[#1c1c1e] p-3 rounded-xl border border-neutral-800 text-xs">
+                            <div className="flex justify-between font-bold mb-1">
+                              <span>{item.emoji} {item.cardTitle} → {item.recipientName}</span>
+                              <span className="text-neutral-500">{item.date}</span>
+                            </div>
+                            <p className="text-neutral-300">{item.message}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      onClick={() => alert('Create & Send a custom card!')}
-                      className="bg-[#1c1c1e] h-36 rounded-lg flex flex-col items-center justify-center gap-2 border border-neutral-800"
-                    >
-                      <div className="w-10 h-10 rounded-full border-2 border-[#1d9bf0] flex items-center justify-center text-[#1d9bf0] text-xl font-bold">
-                        +
-                      </div>
-                      <span className="text-[#1d9bf0] text-xs font-bold">Send New Card</span>
-                    </button>
-
-                    {[
-                      { title: 'Hippo Birthday Cake', emoji: '🦛🎂', bg: 'bg-sky-50' },
-                      { title: 'Hippo Flowers & Balloon', emoji: '🦛🎈💐', bg: 'bg-amber-50' },
-                      { title: 'Party Balloons', emoji: '🎈🎊✨', bg: 'bg-teal-50' },
-                      { title: 'Sparkling Heart', emoji: '❤️✨', bg: 'bg-rose-50' },
-                      { title: 'Wedding Rings', emoji: '💍🌹', bg: 'bg-orange-50' },
-                      { title: 'Champagne Pop', emoji: '🍾🥂✨', bg: 'bg-yellow-50' },
-                      { title: 'Stack of Gifts', emoji: '🎁🎀🎉', bg: 'bg-purple-50' }
-                    ].map((card, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => alert(`Selected "${card.title}" card to share!`)}
-                        className={`${card.bg} h-36 rounded-lg flex flex-col items-center justify-center cursor-pointer shadow`}
-                      >
-                        <div className="text-4xl mb-2">{card.emoji}</div>
-                        <span className="text-[11px] font-semibold text-neutral-700">{card.title}</span>
-                      </div>
-                    ))}
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -362,45 +1067,76 @@
                   <h1 className="text-center font-bold text-base mb-8">Your Special Days</h1>
 
                   <div className="flex flex-col items-center mb-8">
-                    <div className="relative p-1 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-cyan-400">
-                      <div className="w-24 h-24 rounded-full bg-[#e8f2fa] flex items-center justify-center text-[#9bc2e6] text-4xl font-light">
-                        +
+                    <div
+                      onClick={() => setProfileEditModal(true)}
+                      className="relative p-1 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-cyan-400 cursor-pointer"
+                    >
+                      <div className="w-24 h-24 rounded-full bg-[#e8f2fa] flex items-center justify-center text-[#1d82d8] text-3xl font-bold">
+                        {profile.name ? profile.name.charAt(0).toUpperCase() : '+'}
                       </div>
                       <button className="absolute top-0 right-0 bg-white text-black p-1 rounded-full border-2 border-black text-xs">
                         ✏️
                       </button>
                     </div>
                     <div className="mt-3 flex items-center gap-1.5">
-                      <span className="font-bold text-base">You</span>
-                      <button className="text-[#1d9bf0] text-xs font-bold">Edit</button>
+                      <span className="font-bold text-base">{profile.name}</span>
+                      <button onClick={() => setProfileEditModal(true)} className="text-[#1d9bf0] text-xs font-bold">
+                        Edit
+                      </button>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { label: 'Birthday', icon: '🎂' },
-                      { label: 'Anniversary', icon: '💙' },
-                      { label: 'Your Own Occasion', icon: '🖊️' }
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-[#1c1c1e] px-4 py-3 rounded-xl flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span>{item.icon}</span>
-                          <span className="font-bold text-sm">{item.label}</span>
+                    <div className="bg-[#1c1c1e] px-4 py-3 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>🎂</span>
+                        <div>
+                          <div className="font-bold text-sm">Birthday</div>
+                          {profile.birthday && <div className="text-xs text-[#1d9bf0]">{profile.birthday}</div>}
                         </div>
-                        <button
-                          onClick={() => setShowAddModal(true)}
-                          className="bg-[#1d9bf0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full"
-                        >
-                          Add
-                        </button>
                       </div>
-                    ))}
+                      <button
+                        onClick={() => setProfileEditModal(true)}
+                        className="bg-[#1d9bf0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full"
+                      >
+                        {profile.birthday ? 'Edit' : 'Add'}
+                      </button>
+                    </div>
+
+                    <div className="bg-[#1c1c1e] px-4 py-3 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>💙</span>
+                        <div>
+                          <div className="font-bold text-sm">Anniversary</div>
+                          {profile.anniversary && <div className="text-xs text-[#1d9bf0]">{profile.anniversary}</div>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setProfileEditModal(true)}
+                        className="bg-[#1d9bf0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full"
+                      >
+                        {profile.anniversary ? 'Edit' : 'Add'}
+                      </button>
+                    </div>
+
+                    <div className="bg-[#1c1c1e] px-4 py-3 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>🖊️</span>
+                        <div>
+                          <div className="font-bold text-sm">{profile.customOccasionName || 'Your Own Occasion'}</div>
+                          {profile.customOccasionDate && <div className="text-xs text-[#1d9bf0]">{profile.customOccasionDate}</div>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setProfileEditModal(true)}
+                        className="bg-[#1d9bf0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full"
+                      >
+                        {profile.customOccasionDate ? 'Edit' : 'Add'}
+                      </button>
+                    </div>
                   </div>
                   <p className="text-neutral-500 text-xs mt-2 px-1">
-                    Create your own occasion and choose an icon
+                    Create your own occasion and save it to your personal profile
                   </p>
                 </div>
               )}
@@ -409,149 +1145,597 @@
               {activeTab === 'settings' && (
                 <div className="px-4 pt-1">
                   <div className="flex items-center justify-between mb-4">
-                    <button className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-[#1d9bf0] text-sm font-bold">?</button>
+                    <button
+                      onClick={() => alert('hip Functional App — Supports CSV Export & Import for Excel / Numbers / Google Sheets.')}
+                      className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-[#1d9bf0] text-sm font-bold"
+                    >
+                      ?
+                    </button>
                     <span className="font-bold text-base">Settings</span>
-                    <button className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-white text-sm">📤</button>
+                    <button
+                      onClick={() => shareMessage(`My Upcoming Events:\n` + enrichedEvents.map(e => `• ${e.displayTitle}: ${e.paddedDate}`).join('\n'))}
+                      className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-white text-sm"
+                      title="Share Event List"
+                    >
+                      📤
+                    </button>
                   </div>
 
-                  {showBanner && (
+                  {settings.showBanner && (
                     <div className="bg-[#4a2e16] text-amber-100 rounded-xl p-3 mb-4 flex items-start justify-between gap-2 border border-amber-800/50">
                       <p className="text-xs font-semibold leading-relaxed">
-                        Secure your 65 events. Enable private iCloud sync to back up your data and access it across all your devices.
+                        Secure your {events.length} events. Export a CSV backup anytime to open in Excel, Numbers, or Google Sheets.
                       </p>
-                      <button onClick={() => setShowBanner(false)} className="text-xs font-bold px-1">✕</button>
+                      <button
+                        onClick={() => setSettings(s => ({ ...s, showBanner: false }))}
+                        className="text-xs font-bold px-1"
+                      >
+                        ✕
+                      </button>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between py-3 border-b border-neutral-900">
-                    <div className="flex items-center gap-3">
-                      <span>❓</span>
-                      <span className="font-bold text-sm">Help Center</span>
-                    </div>
-                    <span className="text-[#1d9bf0]">›</span>
-                  </div>
-
-                  <div className="py-3.5">
+                  {/* Live Dynamic Home Screen Widgets Preview */}
+                  <div className="py-2">
                     <div className="flex items-center gap-3 mb-3">
                       <span>📱</span>
                       <div>
-                        <div className="font-bold text-sm">Add hip to Your Home Screen</div>
-                        <div className="text-neutral-400 text-xs">See upcoming events and countdowns at a glance</div>
+                        <div className="font-bold text-sm">Live Countdown Widgets</div>
+                        <div className="text-neutral-400 text-xs">Automatically calculated from your saved events</div>
                       </div>
                     </div>
 
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
                       <div className="bg-[#1c1c1e] p-3.5 rounded-2xl w-36 shrink-0 border border-neutral-800">
                         <div className="text-[#f06478] text-[10px] font-bold mb-1">TODAY</div>
-                        <div className="font-bold text-sm leading-tight mb-3">No events today ✨</div>
-                        <div className="text-neutral-400 text-[10px] font-bold">IN 3 DAYS</div>
-                        <div className="text-white text-xs font-bold">4 Events</div>
+                        <div className="font-bold text-sm leading-tight mb-3">
+                          {groupedSections.todayList.length === 0
+                            ? 'No events today ✨'
+                            : `${groupedSections.todayList.length} Event(s) 🎉`}
+                        </div>
+                        <div className="text-neutral-400 text-[10px] font-bold">THIS WEEK</div>
+                        <div className="text-white text-xs font-bold">{groupedSections.laterThisWeek.length} Events</div>
                       </div>
 
-                      <div className="bg-[#1c1c1e] p-3.5 rounded-2xl w-40 shrink-0 border border-neutral-800">
-                        <div className="text-xs font-bold truncate">🎂 Suman Kast...</div>
-                        <div className="text-neutral-400 text-[11px] mb-2">Turning 50</div>
-                        <div className="text-xs font-bold leading-snug">
-                          2 Days<br />14 Hours<br />58 Minutes
+                      {enrichedEvents[0] && (
+                        <div
+                          onClick={() => setSelectedEventId(enrichedEvents[0].id)}
+                          className="bg-[#1c1c1e] p-3.5 rounded-2xl w-44 shrink-0 border border-neutral-800 cursor-pointer"
+                        >
+                          <div className="text-xs font-bold truncate">
+                            {enrichedEvents[0].icon} {enrichedEvents[0].name}
+                          </div>
+                          <div className="text-neutral-400 text-[11px] mb-2">
+                            {enrichedEvents[0].yearsCount ? `Turning ${enrichedEvents[0].yearsCount}` : enrichedEvents[0].type}
+                          </div>
+                          <div className="text-xs font-bold leading-snug">
+                            {enrichedEvents[0].daysLeft} Days<br />
+                            {23 - new Date().getHours()} Hours<br />
+                            {59 - new Date().getMinutes()} Minutes
+                          </div>
+                          <div className="h-1 bg-[#1d9bf0] rounded-full mt-2.5" />
                         </div>
-                        <div className="h-1 bg-[#1d9bf0] rounded-full mt-2.5" />
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="divide-y divide-neutral-900 text-sm">
-                    <div className="py-3 flex items-center justify-between">
+                  {/* Interactive Settings Rows */}
+                  <div className="divide-y divide-neutral-900 text-sm mt-2">
+                    <div
+                      onClick={() => {
+                        const input = prompt('Enter date you met (YYYY-MM-DD):', settings.sinceWeMetDate);
+                        if (input) setSettings(s => ({ ...s, sinceWeMetDate: input }));
+                      }}
+                      className="py-3 flex items-center justify-between cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <span>💖</span>
                         <div>
-                          <div className="font-bold">NEW: Since We Met</div>
-                          <div className="text-neutral-400 text-xs">Count the days. Keep the feeling.</div>
+                          <div className="font-bold">Since We Met Counter</div>
+                          <div className="text-neutral-400 text-xs">
+                            {Math.max(0, Math.floor((new Date() - new Date(settings.sinceWeMetDate)) / (1000 * 60 * 60 * 24)))} days together (since {settings.sinceWeMetDate})
+                          </div>
                         </div>
                       </div>
-                      <span className="text-[#1d9bf0]">›</span>
+                      <span className="text-[#1d9bf0]">Edit ›</span>
                     </div>
 
                     <div className="py-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span>☁️</span>
                         <div>
-                          <div className="font-bold">iCloud Sync</div>
-                          <div className="text-neutral-400 text-xs">Keep your list in sync on all devices</div>
+                          <div className="font-bold">Auto Local Storage Sync</div>
+                          <div className="text-neutral-400 text-xs">All changes are automatically saved on device</div>
                         </div>
                       </div>
                       <button
-                        onClick={() => setICloudSync(!iCloudSync)}
+                        onClick={() => setSettings(s => ({ ...s, iCloudSync: !s.iCloudSync }))}
                         className={`w-12 h-7 rounded-full p-1 transition ${
-                          iCloudSync ? 'bg-[#1d9bf0]' : 'bg-neutral-700'
+                          settings.iCloudSync ? 'bg-[#1d9bf0]' : 'bg-emerald-600'
                         }`}
                       >
-                        <div
-                          className={`w-5 h-5 rounded-full bg-white transition transform ${
-                            iCloudSync ? 'translate-x-5' : ''
-                          }`}
-                        />
+                        <div className="w-5 h-5 rounded-full bg-white translate-x-5" />
                       </button>
                     </div>
 
+                    {/* CSV Backup & Restore Row */}
                     <div className="py-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span>🕒</span>
+                        <span>📊</span>
                         <div>
-                          <div className="font-bold">Manual Backup & Restore</div>
-                          <div className="text-[#f06478] text-xs">Last backup: 04/07/22, 4:33 PM</div>
+                          <div className="font-bold">CSV Backup & Restore</div>
+                          <div className="text-[#f06478] text-xs">Last backup: {settings.lastBackup}</div>
                         </div>
                       </div>
-                      <span className="text-[#1d9bf0]">›</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleExportCSV}
+                          className="bg-[#1c1c1e] border border-neutral-700 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#1d9bf0] active:scale-95"
+                        >
+                          Export CSV
+                        </button>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-[#1c1c1e] border border-neutral-700 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white active:scale-95"
+                        >
+                          Import CSV
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv,text/csv"
+                          onChange={handleImportCSV}
+                          className="hidden"
+                        />
+                      </div>
                     </div>
 
-                    <div className="py-3 flex items-center justify-between">
+                    <div
+                      onClick={testReminderNotification}
+                      className="py-3 flex items-center justify-between cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <span>☑️</span>
                         <div>
                           <div className="font-bold">Run Reminder Test</div>
-                          <div className="text-[#f06478] text-xs font-medium">⚠️ Please check</div>
+                          <div className="text-[#1d9bf0] text-xs font-medium">Tap to test notification alert</div>
                         </div>
                       </div>
-                      <span className="text-[#1d9bf0]">›</span>
+                      <span className="text-[#1d9bf0]">Run ›</span>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        if (window.confirm('Reset app back to original 6 default events?')) {
+                          setEvents(INITIAL_EVENTS);
+                        }
+                      }}
+                      className="py-3 flex items-center justify-between cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>🔄</span>
+                        <div>
+                          <div className="font-bold text-rose-400">Reset Default Demo Data</div>
+                          <div className="text-neutral-500 text-xs">Restore original screenshot records</div>
+                        </div>
+                      </div>
+                      <span className="text-neutral-500">›</span>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ==================== ADD EVENT MODAL ==================== */}
-            {showAddModal && (
-              <div className="absolute inset-0 bg-black/80 z-30 flex items-end">
+            {/* ==================== EVENT DETAILS FULL MODAL ==================== */}
+            {selectedEvent && (
+              <div className="absolute inset-0 bg-black z-30 flex flex-col animate-fadeIn">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-900">
+                  <button
+                    onClick={() => setSelectedEventId(null)}
+                    className="bg-[#1c1c1e] px-3 py-1.5 rounded-full text-xs font-bold text-[#1d9bf0]"
+                  >
+                    ‹ Back
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => toggleFavorite(selectedEvent.id, e)}
+                      className={`p-2 rounded-full bg-[#1c1c1e] text-sm ${selectedEvent.favorite ? 'text-amber-400' : 'text-neutral-400'}`}
+                    >
+                      ★
+                    </button>
+                    <button
+                      onClick={() => openEditModal(selectedEvent)}
+                      className="bg-[#1c1c1e] px-3 py-1.5 rounded-full text-xs font-bold text-[#1d9bf0]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEvent(selectedEvent.id)}
+                      className="bg-rose-950/60 px-3 py-1.5 rounded-full text-xs font-bold text-rose-400"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-none">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative w-20 h-20 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-3xl mb-3 shadow-lg">
+                      {selectedEvent.initial}
+                      <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#f06478] text-white flex items-center justify-center border-2 border-black text-base">
+                        {selectedEvent.icon}
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold">{selectedEvent.displayTitle}</h2>
+                    <p className="text-neutral-400 text-sm mt-1">{selectedEvent.subtitle}</p>
+                  </div>
+
+                  <div className="bg-[#1c1c1e] border border-neutral-800 rounded-2xl p-4 text-center">
+                    <div className="text-xs font-bold text-[#f06478] uppercase tracking-wider mb-1">
+                      {selectedEvent.daysLeft === 0 ? '🎉 Happening Today!' : '⏳ Upcoming Countdown'}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      <div className="bg-black rounded-xl p-2.5">
+                        <div className="text-xl font-extrabold text-[#1d9bf0]">{selectedEvent.daysLeft}</div>
+                        <div className="text-[10px] text-neutral-400 uppercase">Days</div>
+                      </div>
+                      <div className="bg-black rounded-xl p-2.5">
+                        <div className="text-xl font-extrabold text-[#1d9bf0]">{23 - new Date().getHours()}</div>
+                        <div className="text-[10px] text-neutral-400 uppercase">Hours</div>
+                      </div>
+                      <div className="bg-black rounded-xl p-2.5">
+                        <div className="text-xl font-extrabold text-[#1d9bf0]">{59 - new Date().getMinutes()}</div>
+                        <div className="text-[10px] text-neutral-400 uppercase">Minutes</div>
+                      </div>
+                    </div>
+                    {selectedEvent.yearsCount !== null && (
+                      <div className="text-xs text-neutral-300 mt-3 font-medium">
+                        {selectedEvent.type === 'Birthday'
+                          ? `Turning ${selectedEvent.yearsCount} years old on ${selectedEvent.paddedDate}/${selectedEvent.targetYear}`
+                          : `Completing ${selectedEvent.yearsCount} years on ${selectedEvent.paddedDate}/${selectedEvent.targetYear}`}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <button
+                      onClick={() =>
+                        shareMessage(
+                          selectedEvent.type === 'Birthday'
+                            ? `Happy Birthday ${selectedEvent.name}! 🎂🎉 Wishing you a wonderful year ahead!`
+                            : `Happy ${selectedEvent.type} wishes ${selectedEvent.name}! 🎉✨`,
+                          selectedEvent.phone
+                        )
+                      }
+                      className="bg-[#1d9bf0] text-white py-3 rounded-2xl font-bold text-xs flex flex-col items-center gap-1 shadow"
+                    >
+                      <span className="text-lg">💬</span>
+                      <span>WhatsApp Wish</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedEventId(null);
+                        setActiveTab('cards');
+                        setActiveCard(CARDS_CATALOG[0]);
+                        setCardRecipientId(selectedEvent.id);
+                        setCardCustomMessage(`Happy ${selectedEvent.type} ${selectedEvent.name}! 🎂🎉`);
+                      }}
+                      className="bg-[#f06478] text-white py-3 rounded-2xl font-bold text-xs flex flex-col items-center gap-1 shadow"
+                    >
+                      <span className="text-lg">🦛</span>
+                      <span>Send hip Card</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (selectedEvent.phone) {
+                          window.open(`tel:${selectedEvent.phone}`);
+                        } else {
+                          openEditModal(selectedEvent);
+                        }
+                      }}
+                      className="bg-[#1c1c1e] border border-neutral-800 text-white py-3 rounded-2xl font-bold text-xs flex flex-col items-center gap-1"
+                    >
+                      <span className="text-lg">📞</span>
+                      <span>{selectedEvent.phone ? 'Call Now' : 'Add Phone'}</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-[#1c1c1e] rounded-2xl p-4 space-y-2.5 text-xs border border-neutral-800">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Occasion Type</span>
+                      <span className="font-bold">{selectedEvent.type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Event Date</span>
+                      <span className="font-bold">
+                        {selectedEvent.day} {MONTH_NAMES[selectedEvent.month - 1]} {selectedEvent.year || '(Every Year)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Reminder Time</span>
+                      <span className="font-bold text-[#1d9bf0]">🔔 {selectedEvent.reminderTime || '09:00'}</span>
+                    </div>
+                    {selectedEvent.phone && (
+                      <div className="flex justify-between">
+                        <span className="text-neutral-400">Phone</span>
+                        <span className="font-bold">{selectedEvent.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-[#1c1c1e] rounded-2xl p-4 border border-neutral-800">
+                    <div className="text-xs font-bold text-neutral-400 uppercase mb-2">
+                      🎁 Gift Ideas & Personal Notes (Auto-Saved)
+                    </div>
+                    <textarea
+                      rows="3"
+                      value={selectedEvent.notes || ''}
+                      onChange={(e) => updateEventNotes(selectedEvent.id, e.target.value)}
+                      placeholder="Tap to type gift ideas, cake flavors, or notes for this event..."
+                      className="w-full bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#1d9bf0]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== ADD / EDIT EVENT MODAL ==================== */}
+            {isFormOpen && (
+              <div className="absolute inset-0 bg-black/85 z-40 flex items-end">
                 <form
-                  onSubmit={handleAddEvent}
-                  className="w-full bg-[#1c1c1e] rounded-t-3xl p-5 space-y-4 border-t border-neutral-800"
+                  onSubmit={handleSaveEvent}
+                  className="w-full bg-[#1c1c1e] rounded-t-3xl p-5 space-y-3.5 border-t border-neutral-800 max-h-[88vh] overflow-y-auto"
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-base">Add Special Day</h3>
-                    <button type="button" onClick={() => setShowAddModal(false)} className="text-neutral-400">✕</button>
+                    <h3 className="font-bold text-base">
+                      {editingEvent ? 'Edit Event' : 'Add Special Day'}
+                    </h3>
+                    <button type="button" onClick={() => setIsFormOpen(false)} className="text-neutral-400 text-lg">✕</button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Name & Event (e.g. Rahul Birthday)"
-                    value={newEvent.name}
-                    onChange={e => setNewEvent({ ...newEvent, name: e.target.value })}
-                    className="w-full bg-black border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Details (e.g. Turning 30 • 30/10 • Fri)"
-                    value={newEvent.subtitle}
-                    onChange={e => setNewEvent({ ...newEvent, subtitle: e.target.value })}
-                    className="w-full bg-black border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white"
-                  />
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Person / Event Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Suman Kasturi or Gruhapravesham"
+                      value={formState.name}
+                      onChange={e => setFormState({ ...formState, name: e.target.value })}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Occasion Category</label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      {['Birthday', 'Marriage', 'Other'].map(cat => (
+                        <button
+                          type="button"
+                          key={cat}
+                          onClick={() => setFormState({ ...formState, type: cat })}
+                          className={`py-2 rounded-xl text-xs font-bold border ${
+                            formState.type === cat
+                              ? 'bg-[#1d9bf0] text-white border-[#1d9bf0]'
+                              : 'bg-black text-neutral-400 border-neutral-800'
+                          }`}
+                        >
+                          {cat === 'Birthday' ? '🎂 Birthday' : cat === 'Marriage' ? '💍 Marriage' : '✏️ Other'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Day</label>
+                      <select
+                        value={formState.day}
+                        onChange={e => setFormState({ ...formState, day: Number(e.target.value) })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-2.5 py-2.5 text-sm text-white"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Month</label>
+                      <select
+                        value={formState.month}
+                        onChange={e => setFormState({ ...formState, month: Number(e.target.value) })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-2.5 py-2.5 text-sm text-white"
+                      >
+                        {MONTH_NAMES.map((m, idx) => (
+                          <option key={m} value={idx + 1}>{m.slice(0, 3)}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Year (Opt)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1976"
+                        value={formState.year}
+                        onChange={e => setFormState({ ...formState, year: e.target.value })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-2.5 py-2.5 text-sm text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">WhatsApp / Phone</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 98765..."
+                        value={formState.phone}
+                        onChange={e => setFormState({ ...formState, phone: e.target.value })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Reminder Time</label>
+                      <input
+                        type="time"
+                        value={formState.reminderTime}
+                        onChange={e => setFormState({ ...formState, reminderTime: e.target.value })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Gift Ideas / Notes</label>
+                    <input
+                      type="text"
+                      placeholder="Optional note or gift reminder..."
+                      value={formState.notes}
+                      onChange={e => setFormState({ ...formState, notes: e.target.value })}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3.5 py-2 text-sm text-white"
+                    />
+                  </div>
+
                   <button
                     type="submit"
-                    className="w-full bg-[#1d9bf0] text-white font-bold py-2.5 rounded-xl text-sm"
+                    className="w-full bg-[#1d9bf0] text-white font-bold py-3 rounded-xl text-sm shadow-lg"
                   >
-                    Save Event
+                    {editingEvent ? 'Update Event' : 'Save Event'}
                   </button>
                 </form>
+              </div>
+            )}
+
+            {/* ==================== CARD CUSTOMIZER MODAL ==================== */}
+            {activeCard && (
+              <div className="absolute inset-0 bg-black/85 z-40 flex items-end">
+                <div className="w-full bg-[#1c1c1e] rounded-t-3xl p-5 space-y-4 border-t border-neutral-800">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-base">Customize & Send Card</h3>
+                    <button onClick={() => setActiveCard(null)} className="text-neutral-400">✕</button>
+                  </div>
+
+                  <div className={`${activeCard.bg} rounded-2xl p-6 text-center text-neutral-900 shadow-inner`}>
+                    <div className="text-5xl mb-2">{activeCard.emoji}</div>
+                    <div className="font-extrabold text-sm mb-1">{activeCard.title}</div>
+                    <p className="text-xs text-neutral-700 italic">"{cardCustomMessage}"</p>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Choose Recipient</label>
+                    <select
+                      value={cardRecipientId}
+                      onChange={e => setCardRecipientId(e.target.value)}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2.5 text-sm text-white"
+                    >
+                      <option value="">Anyone (Choose in WhatsApp)</option>
+                      {enrichedEvents.map(ev => (
+                        <option key={ev.id} value={ev.id}>{ev.displayTitle}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Your Personal Message</label>
+                    <textarea
+                      rows="2"
+                      value={cardCustomMessage}
+                      onChange={e => setCardCustomMessage(e.target.value)}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl p-3 text-xs text-white"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const rec = enrichedEvents.find(e => e.id === cardRecipientId);
+                      const fullText = `${activeCard.emoji} *${activeCard.title}*\n${rec ? `Dear ${rec.name},\n` : ''}${cardCustomMessage}`;
+                      setCardHistory(prev => [
+                        {
+                          emoji: activeCard.emoji,
+                          cardTitle: activeCard.title,
+                          recipientName: rec ? rec.name : 'Friend',
+                          message: cardCustomMessage,
+                          date: new Date().toLocaleDateString()
+                        },
+                        ...prev
+                      ]);
+                      setActiveCard(null);
+                      shareMessage(fullText, rec?.phone || '');
+                    }}
+                    className="w-full bg-[#1d9bf0] text-white font-bold py-3 rounded-xl text-sm"
+                  >
+                    Share Card via WhatsApp / iMessage 📤
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== PROFILE EDIT MODAL ==================== */}
+            {profileEditModal && (
+              <div className="absolute inset-0 bg-black/85 z-40 flex items-end">
+                <div className="w-full bg-[#1c1c1e] rounded-t-3xl p-5 space-y-3.5 border-t border-neutral-800">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-base">Edit Your Special Days</h3>
+                    <button onClick={() => setProfileEditModal(false)} className="text-neutral-400">✕</button>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Your Name</label>
+                    <input
+                      type="text"
+                      value={profile.name}
+                      onChange={e => setProfile({ ...profile, name: e.target.value })}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Your Birthday</label>
+                    <input
+                      type="date"
+                      value={profile.birthday}
+                      onChange={e => setProfile({ ...profile, birthday: e.target.value })}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase">Your Anniversary</label>
+                    <input
+                      type="date"
+                      value={profile.anniversary}
+                      onChange={e => setProfile({ ...profile, anniversary: e.target.value })}
+                      className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Custom Occasion Title</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Graduation"
+                        value={profile.customOccasionName}
+                        onChange={e => setProfile({ ...profile, customOccasionName: e.target.value })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-neutral-400 uppercase">Occasion Date</label>
+                      <input
+                        type="date"
+                        value={profile.customOccasionDate}
+                        onChange={e => setProfile({ ...profile, customOccasionDate: e.target.value })}
+                        className="w-full mt-1 bg-black border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setProfileEditModal(false)}
+                    className="w-full bg-[#1d9bf0] text-white font-bold py-2.5 rounded-xl text-sm"
+                  >
+                    Save Profile
+                  </button>
+                </div>
               </div>
             )}
 
@@ -563,13 +1747,16 @@
                   { id: 'calendar', label: '📅' },
                   { id: 'cards', label: '💬' },
                   { id: 'profile', label: '👤' },
-                  { id: 'settings', label: '⚙️', badge: true }
+                  { id: 'settings', label: '⚙️', badge: settings.showBanner }
                 ].map(tab => {
                   const isActive = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        setSelectedEventId(null);
+                        setActiveTab(tab.id);
+                      }}
                       className={`relative flex-1 py-2 rounded-full flex justify-center items-center transition text-lg ${
                         isActive ? 'bg-black text-[#1d9bf0]' : 'text-white opacity-80'
                       }`}
@@ -590,7 +1777,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<HipAppClone />);
+    root.render(<HipFunctionalApp />);
   </script>
 </body>
 </html>
