@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>hip</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel to run JSX directly in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-neutral-950 m-0 p-0">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function HipAppClone() {
+      const [activeTab, setActiveTab] = useState('home');
+      const [cardSubTab, setCardSubTab] = useState('cards');
+      const [iCloudSync, setICloudSync] = useState(false);
+      const [showBanner, setShowBanner] = useState(true);
+      const [showAddModal, setShowAddModal] = useState(false);
+
+      const [events, setEvents] = useState([
+        {
+          id: 1,
+          name: 'Nani MDay ( 2...',
+          type: 'Marriage',
+          initial: 'N',
+          section: 'RECENT',
+          icon: '✏️'
+        },
+        {
+          id: 2,
+          name: 'Suman Kasturi Birthday (1976)',
+          subtitle: 'Turning 50 • 28/10 • Wed',
+          initial: 'S',
+          daysLeft: 3,
+          section: 'LATER THIS WEEK',
+          icon: '🎂'
+        },
+        {
+          id: 3,
+          name: 'Baby Akhila',
+          subtitle: 'Turning 4 • 15/11 • Sun',
+          initial: 'B',
+          daysLeft: 21,
+          section: 'NOVEMBER 2026',
+          icon: '🎂'
+        },
+        {
+          id: 4,
+          name: 'Rama Devi Venu MDay (1996)',
+          subtitle: 'Marriage • 22/11 • Sun',
+          initial: 'R',
+          daysLeft: 28,
+          section: 'NOVEMBER 2026',
+          icon: '✏️'
+        },
+        {
+          id: 5,
+          name: 'Gruhapravesham ( 2000 )',
+          subtitle: 'Other • 03/12 • Thu',
+          initial: 'G',
+          daysLeft: 39,
+          section: 'DECEMBER 2026',
+          icon: '✏️'
+        },
+        {
+          id: 6,
+          name: 'Sai Karthik Birthday (1997)',
+          subtitle: 'Turning 29 • 04/12 • Fri',
+          initial: 'S',
+          daysLeft: 40,
+          section: 'DECEMBER 2026',
+          icon: '🎂'
+        }
+      ]);
+
+      const [newEvent, setNewEvent] = useState({ name: '', subtitle: '', daysLeft: 10 });
+
+      const handleAddEvent = (e) => {
+        e.preventDefault();
+        if (!newEvent.name) return;
+        const added = {
+          id: Date.now(),
+          name: newEvent.name,
+          subtitle: newEvent.subtitle || 'Custom • Upcoming',
+          initial: newEvent.name.charAt(0).toUpperCase(),
+          daysLeft: Number(newEvent.daysLeft) || 7,
+          section: 'LATER THIS WEEK',
+          icon: '🎂'
+        };
+        setEvents([...events, added]);
+        setNewEvent({ name: '', subtitle: '', daysLeft: 10 });
+        setShowAddModal(false);
+      };
+
+      return (
+        <div className="min-h-screen bg-neutral-950 flex justify-center items-center p-0 sm:p-4 font-sans select-none">
+          {/* iPhone 16 Pro Viewport Frame */}
+          <div className="w-full max-w-[402px] h-screen sm:h-[874px] bg-black text-white relative overflow-hidden flex flex-col sm:rounded-[52px] sm:border-[8px] sm:border-neutral-800 shadow-2xl">
+            
+            {/* iOS Status Bar */}
+            <div className="flex justify-between items-center px-7 pt-3 pb-2 text-sm font-semibold z-20">
+              <span>9:01</span>
+              <div className="w-28 h-7 bg-neutral-900 rounded-full hidden sm:block" />
+              <div className="flex items-center gap-1.5 text-xs">
+                <span>📶</span>
+                <span className="bg-white text-black px-1.5 py-0.5 rounded text-[10px] font-bold">77</span>
+              </div>
+            </div>
+
+            {/* Main Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto pb-28 scrollbar-none">
+              
+              {/* ==================== TAB 1: HOME ==================== */}
+              {activeTab === 'home' && (
+                <div className="px-4 pt-1">
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1.5 px-3.5 gap-4 border border-neutral-800 text-sm">
+                      <span>🌪️</span>
+                      <span>🔍</span>
+                    </div>
+
+                    <div className="flex items-center bg-[#1c1c1e] rounded-full p-1 border border-neutral-800 text-sm">
+                      <button className="bg-[#2c2c2e] p-1 px-3 rounded-full">👥</button>
+                      <button className="p-1 px-3 rounded-full">⭐</button>
+                    </div>
+
+                    <button className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-sm">
+                      🌱
+                    </button>
+                  </div>
+
+                  {/* RECENT Section */}
+                  <div className="mb-5">
+                    <div className="text-xs font-bold text-neutral-400 tracking-wider mb-3">
+                      🔄 RECENT
+                    </div>
+                    {events.filter(e => e.section === 'RECENT').map(ev => (
+                      <div key={ev.id} className="flex items-center gap-3.5 py-2 border-t border-neutral-900">
+                        <div className="w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg">
+                          {ev.initial}
+                        </div>
+                        <div>
+                          <div className="font-bold text-[16px]">{ev.name}</div>
+                          <div className="text-neutral-400 text-sm">{ev.type}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* STAY CONNECTED Section */}
+                  <div className="mb-6 border-t border-neutral-900 pt-3">
+                    <div className="text-xs font-bold text-neutral-400 tracking-wider mb-2">
+                      💌 STAY CONNECTED
+                    </div>
+                    <div className="font-bold text-[15px] mb-0.5">No celebrations today 🌤️</div>
+                    <div className="text-neutral-400 text-xs mb-3">Keep friendships warm with a hello</div>
+                    
+                    <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+                      {[
+                        "Hi! How's your week going?",
+                        "Sending you good vibes ✨",
+                        "Hope today's treating you kindly ☀️"
+                      ].map((msg, i) => (
+                        <button
+                          key={i}
+                          onClick={() => alert(`Sharing message: "${msg}"`)}
+                          className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-left px-3.5 py-2.5 rounded-2xl flex items-center gap-2 shrink-0 border border-neutral-800"
+                        >
+                          <span className="text-xs font-medium max-w-[115px] leading-snug">{msg}</span>
+                          <span className="text-neutral-500 text-xs">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Event Sections */}
+                  {['LATER THIS WEEK', 'NOVEMBER 2026', 'DECEMBER 2026'].map(section => (
+                    <div key={section} className="mb-5 border-t border-neutral-900 pt-3">
+                      <div className="text-xs font-bold text-neutral-400 tracking-wider mb-3">
+                        {section === 'LATER THIS WEEK' ? '🎁 ' : '🗓️ '}
+                        {section}
+                      </div>
+                      <div className="space-y-4">
+                        {events.filter(e => e.section === section).map(ev => (
+                          <div key={ev.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3.5">
+                              <div className="relative w-11 h-11 rounded-full bg-[#cce4f7] text-[#1d82d8] flex items-center justify-center font-bold text-lg shrink-0">
+                                {ev.initial}
+                                <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#f06478] text-white flex items-center justify-center border-2 border-black text-[10px]">
+                                  {ev.icon}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-bold text-[15px] leading-tight">{ev.name}</div>
+                                <div className="text-neutral-400 text-xs mt-0.5">{ev.subtitle}</div>
+                              </div>
+                            </div>
+                            <div className="bg-[#1d9bf0] text-white rounded-xl px-2.5 py-1 text-center min-w-[52px]">
+                              <div className="text-xs font-bold leading-tight">{ev.daysLeft}</div>
+                              <div className="text-[10px] leading-tight">days</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Floating Pink + | More Pill */}
+                  <div className="fixed bottom-24 right-6 sm:absolute sm:bottom-24 sm:right-5 z-20">
+                    <div className="bg-[#f06478] text-white rounded-full flex items-center shadow-lg px-4 py-2.5 gap-3">
+                      <button onClick={() => setShowAddModal(true)} className="font-bold text-lg leading-none">+</button>
+                      <div className="h-4 w-[1px] bg-white/40" />
+                      <button onClick={() => setShowAddModal(true)} className="text-sm font-bold">
+                        More ▾
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ==================== TAB 2: CALENDAR ==================== */}
+              {activeTab === 'calendar' && (
+                <div className="px-4 pt-1">
+                  <div className="flex items-center justify-between mb-6">
+                    <button className="bg-[#1c1c1e] border border-neutral-800 px-4 py-1.5 rounded-full text-sm font-bold">
+                      Today
+                    </button>
+                    <div className="font-bold text-base">Oct 2026</div>
+                    <div className="flex items-center bg-[#1c1c1e] border border-neutral-800 rounded-full px-3 py-1 gap-4 text-sm font-bold">
+                      <span>‹</span>
+                      <span>›</span>
+                    </div>
+                  </div>
+
+                  {/* Weekdays Header */}
+                  <div className="grid grid-cols-7 text-center text-[11px] text-neutral-500 font-semibold mb-3">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                      <div key={i}>{d}</div>
+                    ))}
+                  </div>
+
+                  {/* October 2026 Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-y-5 text-center text-sm font-bold">
+                    <div /><div /><div /><div />
+                    {Array.from({ length: 31 }, (_, idx) => {
+                      const day = idx + 1;
+                      const isToday = day === 25;
+                      const hasPencil = day === 20;
+                      const hasCake = day === 28;
+                      return (
+                        <div
+                          key={day}
+                          className={`h-12 flex flex-col items-center justify-start pt-1.5 rounded-xl ${
+                            isToday ? 'bg-[#f06478] text-white' : ''
+                          }`}
+                        >
+                          <span>{day}</span>
+                          {hasPencil && <span className="text-[11px] mt-0.5">🖊️</span>}
+                          {hasCake && <span className="text-[11px] mt-0.5">🎂</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-12 flex justify-center">
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="bg-[#1d9bf0] text-white font-bold text-sm px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md"
+                    >
+                      <span>+ Add another b'day 🎂</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ==================== TAB 3: HIP CARDS ==================== */}
+              {activeTab === 'cards' && (
+                <div className="px-3 pt-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-8" />
+                    <div className="bg-[#1c1c1e] p-1 rounded-full flex items-center border border-neutral-800">
+                      <button
+                        onClick={() => setCardSubTab('cards')}
+                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                          cardSubTab === 'cards' ? 'bg-black text-white' : 'text-neutral-400'
+                        }`}
+                      >
+                        hip Cards
+                      </button>
+                      <button
+                        onClick={() => setCardSubTab('gif')}
+                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition ${
+                          cardSubTab === 'gif' ? 'bg-black text-white' : 'text-neutral-400'
+                        }`}
+                      >
+                        GIF
+                      </button>
+                    </div>
+                    <button className="bg-[#1c1c1e] p-2 rounded-full border border-neutral-800 text-[#1d9bf0] text-xs">
+                      🕒
+                    </button>
+                  </div>
+
+                  <div className="mb-4 px-1">
+                    <div className="font-bold text-sm mb-0.5">🎉 Make your birthday wishes feel special.</div>
+                    <div className="text-neutral-400 text-[11px] leading-snug">
+                      Choose a card, add a message, and share via WhatsApp, iMessage, or any app
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      onClick={() => alert('Create & Send a custom card!')}
+                      className="bg-[#1c1c1e] h-36 rounded-lg flex flex-col items-center justify-center gap-2 border border-neutral-800"
+                    >
+                      <div className="w-10 h-10 rounded-full border-2 border-[#1d9bf0] flex items-center justify-center text-[#1d9bf0] text-xl font-bold">
+                        +
+                      </div>
+                      <span className="text-[#1d9bf0] text-xs font-bold">Send New Card</span>
+                    </button>
+
+                    {[
+                      { title: 'Hippo Birthday Cake', emoji: '🦛🎂', bg: 'bg-sky-50' },
+                      { title: 'Hippo Flowers & Balloon', emoji: '🦛🎈💐', bg: 'bg-amber-50' },
+                      { title: 'Party Balloons', emoji: '🎈🎊✨', bg: 'bg-teal-50' },
+                      { title: 'Sparkling Heart', emoji: '❤️✨', bg: 'bg-rose-50' },
+                      { title: 'Wedding Rings', emoji: '💍🌹', bg: 'bg-orange-50' },
+                      { title: 'Champagne Pop', emoji: '🍾🥂✨', bg: 'bg-yellow-50' },
+                      { title: 'Stack of Gifts', emoji: '🎁🎀🎉', bg: 'bg-purple-50' }
+                    ].map((card, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => alert(`Selected "${card.title}" card to share!`)}
+                        className={`${card.bg} h-36 rounded-lg flex flex-col items-center justify-center cursor-pointer shadow`}
+                      >
+                        <div className="text-4xl mb-2">{card.emoji}</div>
+                        <span className="text-[11px] font-semibold text-neutral-700">{card.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ==================== TAB 4: PROFILE (YOUR SPECIAL DAYS) ==================== */}
+              {activeTab === 'profile' && (
+                <div className="px-4 pt-2">
+                  <h1 className="text-center font-bold text-base mb-8">Your Special Days</h1>
+
+                  <div className="flex flex-col items-center mb-8">
+                    <div className="relative p-1 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-cyan-400">
+                      <div className="w-24 h-24 rounded-full bg-[#e8f2fa] flex items-center justify-center text-[#9bc2e6] text-4xl font-light">
+                        +
+                      </div>
+                      <button className="absolute top-0 right-0 bg-white text-black p-1 rounded-full border-2 border-black text-xs">
+                        ✏️
+                      </button>
+                    </div>
+                    <div className="mt-3 flex items-center gap-1.5">
+                      <span className="font-bold text-base">You</span>
+                      <button className="text-[#1d9bf0] text-xs font-bold">Edit</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Birthday', icon: '🎂' },
+                      { label: 'Anniversary', icon: '💙' },
+                      { label: 'Your Own Occasion', icon: '🖊️' }
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-[#1c1c1e] px-4 py-3 rounded-xl flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span>{item.icon}</span>
+                          <span className="font-bold text-sm">{item.label}</span>
+                        </div>
+                        <button
+                          onClick={() => setShowAddModal(true)}
+                          className="bg-[#1d9bf0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-neutral-500 text-xs mt-2 px-1">
+                    Create your own occasion and choose an icon
+                  </p>
+                </div>
+              )}
+
+              {/* ==================== TAB 5: SETTINGS ==================== */}
+              {activeTab === 'settings' && (
+                <div className="px-4 pt-1">
+                  <div className="flex items-center justify-between mb-4">
+                    <button className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-[#1d9bf0] text-sm font-bold">?</button>
+                    <span className="font-bold text-base">Settings</span>
+                    <button className="bg-[#1c1c1e] px-2.5 py-1.5 rounded-full text-white text-sm">📤</button>
+                  </div>
+
+                  {showBanner && (
+                    <div className="bg-[#4a2e16] text-amber-100 rounded-xl p-3 mb-4 flex items-start justify-between gap-2 border border-amber-800/50">
+                      <p className="text-xs font-semibold leading-relaxed">
+                        Secure your 65 events. Enable private iCloud sync to back up your data and access it across all your devices.
+                      </p>
+                      <button onClick={() => setShowBanner(false)} className="text-xs font-bold px-1">✕</button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between py-3 border-b border-neutral-900">
+                    <div className="flex items-center gap-3">
+                      <span>❓</span>
+                      <span className="font-bold text-sm">Help Center</span>
+                    </div>
+                    <span className="text-[#1d9bf0]">›</span>
+                  </div>
+
+                  <div className="py-3.5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span>📱</span>
+                      <div>
+                        <div className="font-bold text-sm">Add hip to Your Home Screen</div>
+                        <div className="text-neutral-400 text-xs">See upcoming events and countdowns at a glance</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                      <div className="bg-[#1c1c1e] p-3.5 rounded-2xl w-36 shrink-0 border border-neutral-800">
+                        <div className="text-[#f06478] text-[10px] font-bold mb-1">TODAY</div>
+                        <div className="font-bold text-sm leading-tight mb-3">No events today ✨</div>
+                        <div className="text-neutral-400 text-[10px] font-bold">IN 3 DAYS</div>
+                        <div className="text-white text-xs font-bold">4 Events</div>
+                      </div>
+
+                      <div className="bg-[#1c1c1e] p-3.5 rounded-2xl w-40 shrink-0 border border-neutral-800">
+                        <div className="text-xs font-bold truncate">🎂 Suman Kast...</div>
+                        <div className="text-neutral-400 text-[11px] mb-2">Turning 50</div>
+                        <div className="text-xs font-bold leading-snug">
+                          2 Days<br />14 Hours<br />58 Minutes
+                        </div>
+                        <div className="h-1 bg-[#1d9bf0] rounded-full mt-2.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-neutral-900 text-sm">
+                    <div className="py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>💖</span>
+                        <div>
+                          <div className="font-bold">NEW: Since We Met</div>
+                          <div className="text-neutral-400 text-xs">Count the days. Keep the feeling.</div>
+                        </div>
+                      </div>
+                      <span className="text-[#1d9bf0]">›</span>
+                    </div>
+
+                    <div className="py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>☁️</span>
+                        <div>
+                          <div className="font-bold">iCloud Sync</div>
+                          <div className="text-neutral-400 text-xs">Keep your list in sync on all devices</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setICloudSync(!iCloudSync)}
+                        className={`w-12 h-7 rounded-full p-1 transition ${
+                          iCloudSync ? 'bg-[#1d9bf0]' : 'bg-neutral-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full bg-white transition transform ${
+                            iCloudSync ? 'translate-x-5' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>🕒</span>
+                        <div>
+                          <div className="font-bold">Manual Backup & Restore</div>
+                          <div className="text-[#f06478] text-xs">Last backup: 04/07/22, 4:33 PM</div>
+                        </div>
+                      </div>
+                      <span className="text-[#1d9bf0]">›</span>
+                    </div>
+
+                    <div className="py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span>☑️</span>
+                        <div>
+                          <div className="font-bold">Run Reminder Test</div>
+                          <div className="text-[#f06478] text-xs font-medium">⚠️ Please check</div>
+                        </div>
+                      </div>
+                      <span className="text-[#1d9bf0]">›</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ==================== ADD EVENT MODAL ==================== */}
+            {showAddModal && (
+              <div className="absolute inset-0 bg-black/80 z-30 flex items-end">
+                <form
+                  onSubmit={handleAddEvent}
+                  className="w-full bg-[#1c1c1e] rounded-t-3xl p-5 space-y-4 border-t border-neutral-800"
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-base">Add Special Day</h3>
+                    <button type="button" onClick={() => setShowAddModal(false)} className="text-neutral-400">✕</button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Name & Event (e.g. Rahul Birthday)"
+                    value={newEvent.name}
+                    onChange={e => setNewEvent({ ...newEvent, name: e.target.value })}
+                    className="w-full bg-black border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Details (e.g. Turning 30 • 30/10 • Fri)"
+                    value={newEvent.subtitle}
+                    onChange={e => setNewEvent({ ...newEvent, subtitle: e.target.value })}
+                    className="w-full bg-black border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-[#1d9bf0] text-white font-bold py-2.5 rounded-xl text-sm"
+                  >
+                    Save Event
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* ==================== FLOATING BOTTOM NAVIGATION BAR ==================== */}
+            <div className="absolute bottom-5 inset-x-4 z-20">
+              <div className="bg-[#161618]/95 backdrop-blur-md border border-neutral-800/80 rounded-full p-1.5 flex justify-between items-center shadow-2xl">
+                {[
+                  { id: 'home', label: '🏠' },
+                  { id: 'calendar', label: '📅' },
+                  { id: 'cards', label: '💬' },
+                  { id: 'profile', label: '👤' },
+                  { id: 'settings', label: '⚙️', badge: true }
+                ].map(tab => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative flex-1 py-2 rounded-full flex justify-center items-center transition text-lg ${
+                        isActive ? 'bg-black text-[#1d9bf0]' : 'text-white opacity-80'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {tab.badge && (
+                        <span className="absolute top-1.5 right-4 w-2.5 h-2.5 bg-[#f06478] rounded-full" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<HipAppClone />);
+  </script>
+</body>
+</html>
